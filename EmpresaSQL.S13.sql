@@ -103,23 +103,6 @@ CREATE TABLE TEmpleadoProyecto(
 );
 GO
 
-CREATE TABLE TCliente(
-	nClienteID INT IDENTITY(1,1),
-	cNombres NVARCHAR(100) NOT NULL,
-	cApellidos NVARCHAR(100) NOT NULL,
-	cCedula VARCHAR(20) NOT NULL UNIQUE,
-	cTelefono VARCHAR(20), cEmail NVARCHAR(100) UNIQUE,
-	cDireccion NVARCHAR(200),
-	dFechaRegistro DATE NOT NULL DEFAULT GETDATE(),
-	bActivo BIT NOT NULL DEFAULT 1 );
-
-	CONSTRAINT PK_TCliente
-    PRIMARY KEY (nClienteID)
-
-	,
-
-GO
-
 
 --PARTE II: ALTER TABLE
 
@@ -183,6 +166,8 @@ ALTER TABLE TEmpleado
 ADD dFechaNacimiento DATE;
 GO
 
+
+--Creación de tabla TSucursal
 CREATE TABLE TSucursal(
     nSucursalID INT IDENTITY(1,1) PRIMARY KEY,
     cNombreSucursal NVARCHAR(100) NOT NULL,
@@ -229,6 +214,17 @@ INSERT INTO TEmpleadoProyecto VALUES (9,3);
 INSERT INTO TEmpleadoProyecto VALUES (10,3);
 GO
 
+
+INSERT INTO TEmpleado(cNIF,cNombre,cApellido,nDepartamentoID,nCargoID,nSalario)
+VALUES(2001,'Mario','FechaDefault',1,1,800);
+
+INSERT INTO TEmpleado(cNIF,cNombre,cApellido,nDepartamentoID,nCargoID,nSalario,cEmail)
+VALUES(2002,'Laura','Correo',2,2,900,'laura@empresa.com');
+
+INSERT INTO TEmpleado(cNIF,cNombre,cApellido,nDepartamentoID,nCargoID,nSalario)
+VALUES(2003,'Jose','ActivoDefault',3,3,950);
+
+
 --UPDATE
 UPDATE TEmpleado SET nSalario = nSalario * 1.10;
 GO 
@@ -241,49 +237,47 @@ GO
 UPDATE TProyecto SET dFechaFin='2026-12-31' WHERE nProyectoID=3;
 GO
 
+--Ejemplo de error
+INSERT INTO TEmpleadoProyecto VALUES(1,3);
+
+
+--UPDATES
+UPDATE TEmpleado SET nSalario=nSalario*1.10;
+UPDATE TEmpleado SET nSalario=nSalario*1.20 WHERE nDepartamentoID=3;
+UPDATE TEmpleado SET cEmail='nuevo_correo@empresa.com' WHERE nEmpleadoID=1;
+UPDATE TEmpleado SET nCargoID=1 WHERE nEmpleadoID=2;
+UPDATE TEmpleado SET nDepartamentoID=4 WHERE nEmpleadoID IN(1,2);
+UPDATE TEmpleado SET bActivo=0 WHERE nSalario<500;
+UPDATE TProyecto SET dFechaFin='2026-12-31' WHERE nProyectoID=3;
+INSERT INTO TEmpleadoProyecto VALUES(1,3);
+
+
+--DELETES
+DELETE FROM TEmpleado WHERE cNIF=2003;
+DELETE FROM TEmpleado WHERE bActivo=0;
+DELETE FROM TEmpleadoProyecto WHERE nProyectoID=2;
+DELETE FROM TProyecto WHERE nProyectoID=2;
+
+
 --CONSULTAS
 SELECT * FROM TEmpleado ORDER BY cApellido;
+SELECT * FROM TEmpleado WHERE nSalario>1000;
+SELECT * FROM TEmpleado WHERE bActivo=1;
+SELECT * FROM TEmpleado WHERE YEAR(dFechaContratacion)=YEAR(GETDATE());
+SELECT E.cNombre,E.cApellido,D.cNombreDepartamento FROM TEmpleado E JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID;
+SELECT E.cNombre,E.cApellido,C.cNombreCargo FROM TEmpleado E JOIN TCargo C ON E.nCargoID=C.nCargoID;
+SELECT E.cNombre,P.cNombreProyecto FROM TEmpleado E JOIN TEmpleadoProyecto EP ON E.nEmpleadoID=EP.nEmpleadoID JOIN TProyecto P ON EP.nProyectoID=P.nProyectoID;
+SELECT D.cNombreDepartamento,COUNT(*) Total FROM TEmpleado E JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID GROUP BY D.cNombreDepartamento;
+SELECT D.cNombreDepartamento,AVG(nSalario) Promedio FROM TEmpleado E JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID GROUP BY D.cNombreDepartamento;
+SELECT D.cNombreDepartamento,MAX(nSalario) Maximo,MIN(nSalario) Minimo FROM TEmpleado E JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID GROUP BY D.cNombreDepartamento;
+SELECT P.cNombreProyecto,COUNT(*) Empleados FROM TProyecto P JOIN TEmpleadoProyecto EP ON P.nProyectoID=EP.nProyectoID GROUP BY P.cNombreProyecto HAVING COUNT(*)>2;
+SELECT * FROM TEmpleado WHERE cApellido LIKE 'G%';
+SELECT * FROM TEmpleado ORDER BY nSalario DESC;
+SELECT TOP 3 * FROM TEmpleado ORDER BY nSalario DESC;
+SELECT * FROM TEmpleado WHERE nEdad BETWEEN 25 AND 40;
+SELECT COUNT(*) TotalActivos FROM TEmpleado WHERE bActivo=1;
+SELECT COUNT(*) TotalProyectos FROM TProyecto;
 
-SELECT * FROM TEmpleado WHERE nSalario > 1000;
-SELECT * FROM TEmpleado WHERE bActivo = 1;
-
-SELECT E.cNombre, E.cApellido, D.cNombreDepartamento FROM TEmpleado E INNER JOIN TDepartamento D ON E.nDepartamentoID = D.nDepartamentoID;
-
-SELECT E.cNombre, E.cApellido, C.cNombreCargo FROM TEmpleado E INNER JOIN TCargo C ON E.nCargoID = C.nCargoID;
-
-SELECT D.cNombreDepartamento, COUNT(*) AS TotalEmpleados FROM TEmpleado E INNER JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID GROUP BY D.cNombreDepartamento;
-
-SELECT D.cNombreDepartamento, AVG(E.nSalario) AS PromedioSalario FROM TEmpleado E INNER JOIN TDepartamento D ON E.nDepartamentoID=D.nDepartamentoID GROUP BY D.cNombreDepartamento;
-
-SELECT TOP 3 * FROM TEmpleado ORDER BY nSalario DESC; SELECT COUNT(*) AS TotalActivos FROM TEmpleado WHERE bActivo=1; SELECT COUNT(*) AS TotalProyectos FROM TProyecto;
-GO
-
-
-SELECT
-	C.nClienteID,
-	C.cNombres,
-	C.cApellidos,
-	AVG(V.nMonto) AS PromedioCompra
-FROM TCliente C INNER JOIN TVenta V
-ON C.nClienteID = V.nClienteID
-GROUP BY 
-	C.nClienteID,
-	C.cNombres,
-	C.cApellidos
-ORDER BY PromedioCompra DESC;
-GO
-
-
-SELECT 
-	C.cNombres + ' ' + C.cApellidos AS Cliente,
-	V.nVentaID,
-	V.dFechaVenta,
-	V.nMonto,
-D.cNombreDepartamento 
-FROM TCliente C INNER JOIN TVenta V
-ON C.nClienteID = V.nClienteID CROSS JOIN TDepartamento D
-ORDER BY Cliente;
-GO
 
 --ELIMINAR RESTRICCIONEA
 ALTER TABLE TEmpleado DROP CONSTRAINT CK_TEmpleado_Edad;
@@ -297,3 +291,73 @@ ALTER TABLE TEmpleado ADD CONSTRAINT CK_TEmpleado_Edad CHECK(nEdad BETWEEN 18 AN
 GO
 ALTER TABLE TEmpleado ADD CONSTRAINT UQ_TEmpleado_Email UNIQUE(cEmail);
 GO
+
+
+--CREACIÓN DE LA TABLA CLIENTE
+CREATE TABLE TCliente(
+ nClienteID INT IDENTITY(1,1) PRIMARY KEY,
+ cNombres NVARCHAR(100) NOT NULL,
+ cApellidos NVARCHAR(100) NOT NULL,
+ cCedula VARCHAR(20) UNIQUE NOT NULL,
+ cTelefono VARCHAR(20),
+ cEmail NVARCHAR(100) UNIQUE,
+ cDireccion NVARCHAR(200),
+ dFechaRegistro DATE DEFAULT GETDATE(),
+ bActivo BIT DEFAULT 1
+);
+
+
+--CREACCIÓN DE LA TABLA VENTA
+CREATE TABLE TVenta(
+ nVentaID INT IDENTITY(1,1) PRIMARY KEY,
+ nClienteID INT NOT NULL,
+ dFechaVenta DATE DEFAULT GETDATE(),
+ nMonto DECIMAL(10,2) CHECK(nMonto>0),
+ FOREIGN KEY(nClienteID) REFERENCES TCliente(nClienteID)
+);
+
+DECLARE @i INT=1;
+WHILE @i<=20
+BEGIN
+ INSERT INTO TCliente(cNombres,cApellidos,cCedula)
+ VALUES(CONCAT('Cliente',@i),'Demo',CONCAT('CED',@i));
+ SET @i=@i+1;
+END
+
+SET @i=1;
+WHILE @i<=50
+BEGIN
+ INSERT INTO TVenta(nClienteID,nMonto)
+ VALUES(((@i-1)%20)+1,100+(@i*10));
+ SET @i=@i+1;
+END
+
+UPDATE TVenta SET nMonto=nMonto*1.10 WHERE nMonto>=500;
+
+SELECT TOP 5 C.nClienteID,C.cNombres,SUM(V.nMonto) TotalCompras
+FROM TCliente C JOIN TVenta V ON C.nClienteID=V.nClienteID
+GROUP BY C.nClienteID,C.cNombres
+ORDER BY TotalCompras DESC;
+
+SELECT YEAR(dFechaVenta) Anio,MONTH(dFechaVenta) Mes,SUM(nMonto) Total
+FROM TVenta
+GROUP BY YEAR(dFechaVenta),MONTH(dFechaVenta);
+
+SELECT C.cNombres,AVG(V.nMonto) Promedio
+FROM TCliente C JOIN TVenta V ON C.nClienteID=V.nClienteID
+GROUP BY C.cNombres;
+
+SELECT C.cNombres,V.nMonto,D.cNombreDepartamento
+FROM TCliente C
+JOIN TVenta V ON C.nClienteID=V.nClienteID
+CROSS JOIN TDepartamento D;
+
+/*(ejecutar al final si se solicita)
+DROP TABLE TEmpleadoProyecto;
+DROP TABLE TProyecto;
+DROP TABLE TEmpleado;
+DROP TABLE TCargo;
+DROP TABLE TDepartamento;
+DROP TABLE TSucursal;
+USE master;
+DROP DATABASE EmpresaSQL;*/
